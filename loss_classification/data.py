@@ -6,20 +6,6 @@ import random
 from torch.utils.data import Dataset
 from torchvision import datasets, transforms
 
-class CIFAR100_Dataset(Dataset):
-  def __init__(self,x,y):
-    self.x = x
-    self.y = y
-  def __len__(self):
-    return len(self.x)
-  def __getitem__(self,idx):
-    x = self.x[idx]
-    y = self.y[idx]
-    return torch.tensor(x,dtype=torch.float),torch.tensor(y,dtype=torch.long)
-
-def next_batch(start_index, finish_index, data_x):
-    x = data_x[start_index:finish_index]
-    return x
 
 def make_data(suffle_idx, x_data, y_data,data_count, loss_idx,name,label_count):
     x_data = np.array(x_data)
@@ -47,33 +33,6 @@ def make_data(suffle_idx, x_data, y_data,data_count, loss_idx,name,label_count):
     return np.asarray(x), np.asarray(y)
 
 def data_loader_make(data_sets):
-    mean = [0.5071, 0.4867, 0.4408]
-    stdv = [0.2675, 0.2565, 0.2761]
-
-    train_transforms = tv.transforms.Compose([
-        tv.transforms.RandomCrop(32, padding=4),
-        tv.transforms.RandomHorizontalFlip(),
-        tv.transforms.ToTensor(),
-        tv.transforms.Normalize(mean=mean, std=stdv),
-    ])
-    test_transforms = tv.transforms.Compose([
-        tv.transforms.ToTensor(),
-        tv.transforms.Normalize(mean=mean, std=stdv),
-    ])
-
-    train_set = datasets.CIFAR100(root='./cifar100_data/', train=True, transform=train_transforms, download=True)
-
-    label = [i for i in range(0,10)]
-    data_count = [5000,5000,5000,5000,5000,5000,5000,5000,5000,5000]
-    #data_count = [450, 450, 450, 450, 450, 4500, 4500, 4500, 4500, 4500]
-    shuffle = True
-
-    train_data_x = []
-    train_data_y = []
-    validation_data_x = []
-    validation_data_y = []
-    test_data_x = []
-    test_data_y = []
     if data_sets == 1:
         loss_csv = pd.read_csv('./data_index_0.1.csv', index_col=0)
     elif data_sets == 2:
@@ -90,6 +49,19 @@ def data_loader_make(data_sets):
         loss_csv = pd.read_csv('./train_data_index_0.003.csv', index_col=0)
     elif data_sets == 8:
         loss_csv = pd.read_csv('./train_data_index_0.001.csv', index_col=0)
+
+
+    train_set = datasets.CIFAR100(root='./cifar100_data/', train=True,download=True)
+
+    label = [i for i in range(0,10)]
+    data_count = [5000,5000,5000,5000,5000,5000,5000,5000,5000,5000]
+
+    train_data_x = []
+    train_data_y = []
+    validation_data_x = []
+    validation_data_y = []
+    test_data_x = []
+    test_data_y = []
 
     suffle_idx = torch.load('./train_indices.pth')
     suffle_idx = np.asarray(suffle_idx)
@@ -139,6 +111,21 @@ def data_loader_make(data_sets):
     print(len(train_loader.dataset),len(valid_loader.dataset),len(test_loader.dataset))
 
     return train_loader, valid_loader, test_loader
+
+class CIFAR100_Dataset(Dataset):
+  def __init__(self,x,y):
+    self.x = x
+    self.y = y
+  def __len__(self):
+    return len(self.x)
+  def __getitem__(self,idx):
+    x = self.x[idx]
+    y = self.y[idx]
+    return torch.tensor(x,dtype=torch.float),torch.tensor(y,dtype=torch.long)
+
+def next_batch(start_index, finish_index, data_x):
+    x = data_x[start_index:finish_index]
+    return x
 
 def y_data_preprocessing(y_test):
     idx = 0
