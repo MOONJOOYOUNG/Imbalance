@@ -17,7 +17,7 @@ import torchvision as tv
 from torch.utils.data.sampler import SubsetRandomSampler
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--epoch',default=150, type=int)
+parser.add_argument('--epoch',default=0, type=int)
 parser.add_argument('--batch_size', default=128, type=int, help='batch size')
 parser.add_argument('--gpu_id', default='2', type=str, help='devices')
 
@@ -36,7 +36,7 @@ parser.add_argument('--gamma',default=0.1,type=float)
 parser.add_argument('--momentum',default=0.9,type=float)
 parser.add_argument('--nesterov',default=True,type=bool)
 parser.add_argument('--depth',default=40, type=int)
-parser.add_argument('--save_path',default='./res110_50_150_exper2/', type=str)
+parser.add_argument('--save_path',default='./test/', type=str)
 args = parser.parse_args()
 
 def main():
@@ -135,8 +135,8 @@ def main():
     utlis.save_loss_acc('test', test_loss_li, test_acc_li, save_path)
 
     print('draw curve')
-    utlis.draw_curve('train_acc.csv', 'vali_acc.csv', 'acc', save_path)
-    utlis.draw_curve('train_loss.csv', 'vali_loss.csv', 'loss', save_path)
+    utlis.draw_curve('train_acc.csv', 'valid_acc.csv', 'acc', save_path)
+    utlis.draw_curve('train_loss.csv', 'valid_loss.csv', 'loss', save_path)
     utlis.draw_test_curve('test_acc.csv', 'test_loss.csv', save_path)
 
 def train(loader,network,criterion,optimizer,epoch):
