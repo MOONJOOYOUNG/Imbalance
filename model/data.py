@@ -67,7 +67,7 @@ def data_loader_make():
     train_data = torch.utils.data.Subset(train_set, train_data_x)
     validation_data = torch.utils.data.Subset(valid_set, validation_x_li)
     test_data = torch.utils.data.Subset(test_set, test_x_li)
-    feature_data = torch.utils.data.Subset(valid_set, random.shuffle(train_data_x))
+    feature_data = torch.utils.data.Subset(valid_set, train_data_x)
     # create data loader
     train_loader = torch.utils.data.DataLoader(dataset=train_data, batch_size=128, shuffle=False, num_workers=4)
     valid_loader = torch.utils.data.DataLoader(dataset=validation_data, batch_size=128, shuffle=False, num_workers=4)
