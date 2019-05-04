@@ -20,6 +20,7 @@ def make_data(label, x_data, y_data, data_count, name, label_count):
         x = idx[data_count:data_count + 500]
     else:
         x = idx[:1000]
+    print(len(x))
     return np.asarray(x)
 
 def data_loader_make():
@@ -62,17 +63,18 @@ def data_loader_make():
             label_count += 1
 
     random.shuffle(train_data_x)
-
+    
     # creat imbalance index data.set
     train_data = torch.utils.data.Subset(train_set, train_data_x)
-    validation_data = torch.utils.data.Subset(valid_set, validation_x_li)
-    test_data = torch.utils.data.Subset(test_set, test_x_li)
+    validation_data = torch.utils.data.Subset(valid_set, validation_data_x)
+    test_data = torch.utils.data.Subset(test_set, test_data_x)
     feature_data = torch.utils.data.Subset(valid_set, train_data_x)
-    # create data loader
+        # create data loader
     train_loader = torch.utils.data.DataLoader(dataset=train_data, batch_size=128, shuffle=False, num_workers=4)
     valid_loader = torch.utils.data.DataLoader(dataset=validation_data, batch_size=128, shuffle=False, num_workers=4)
     test_loader = torch.utils.data.DataLoader(dataset=test_data, batch_size=100, shuffle=False, num_workers=4)
     feature_train_loader = torch.utils.data.DataLoader(dataset=feature_data, batch_size=128, shuffle=False,num_workers=4)
-
+    print(len(train_loader.dataset), len(valid_loader.dataset), len(test_loader.dataset),
+          len(feature_train_loader.dataset))
 
     return train_loader, valid_loader, test_loader, feature_train_loader
