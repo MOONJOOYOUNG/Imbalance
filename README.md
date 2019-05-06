@@ -13,3 +13,6 @@
 
 ## loss_classification
 * use loss ranking index -> new classification model
+
+## temperature_scaling_model
+* temperature_scaling model and calibration measure
