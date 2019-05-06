@@ -17,7 +17,7 @@ import torchvision as tv
 from torch.utils.data.sampler import SubsetRandomSampler
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--epoch',default=160, type=int)
+parser.add_argument('--epoch',default=100, type=int)
 parser.add_argument('--batch_size', default=128, type=int, help='batch size')
 parser.add_argument('--gpu_id', default='2', type=str, help='devices')
 
@@ -36,7 +36,7 @@ parser.add_argument('--gamma',default=0.1,type=float)
 parser.add_argument('--momentum',default=0.9,type=float)
 parser.add_argument('--nesterov',default=True,type=bool)
 parser.add_argument('--depth',default=40, type=int)
-parser.add_argument('--save_path',default='./test/', type=str)
+parser.add_argument('--save_path',default='./test_100_epoch/', type=str)
 args = parser.parse_args()
 
 def main():
@@ -88,7 +88,6 @@ def main():
     for param_tensor in network.state_dict():
         print(param_tensor, "\t", network.state_dict()[param_tensor].size())
 
-
     print('start learning')
     train_loss_li = []
     train_acc_li = []
@@ -115,15 +114,15 @@ def main():
         test_acc_li.append(test_acc)
 
     # get_feature
-    train_loss, train_acc, train_softmax, train_correct, train_feature,train_y = test(feature_train_loader, network, criterion,777,'train')
-    test_loss, test_acc, test_softmax, test_correct, test_feature, test_y = test(test_loader, network, criterion, 777,'test')
+    train_loss, train_acc, train_softmax, train_correct, train_feature,train_y = test(feature_train_loader, network, criterion,'finish','train')
+    test_loss, test_acc, test_softmax, test_correct, test_feature, test_y = test(test_loader, network, criterion, 'finish','test')
 
     utlis.save_data('train_feature', train_feature, save_path)
-    utlis.save_data('test_feature', test_feature, save_path)
     utlis.save_data('train_y', train_y, save_path)
+    utlis.save_data('test_feature', test_feature, save_path)s
     utlis.save_data('test_y', test_y, save_path)
 
-
+    # get softmax
     for i in range(len(test_softmax)):
         test_softmax[i] = test_softmax[i].item()
 
