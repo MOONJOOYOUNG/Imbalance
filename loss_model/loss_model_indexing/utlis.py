@@ -43,10 +43,6 @@ def save_data(name, data, save_path):
     df_data.to_csv(save_path + '{0}_data.csv'.format(name), encoding='ms949')
 # loss_csv = pd.read_csv('./train_csv/train_loss_idv_data_{0}.csv'.format(i), index_col=0)
 
-def save_data(name, data, save_path):
-    df_data = pd.DataFrame(data)
-    df_data.to_csv(save_path + '{0}_data.csv'.format(name), encoding='ms949')
-
 def check_idx_list(idx_list, idx):
     if idx_list == []:
         return idx
@@ -62,6 +58,7 @@ def load_data(idx):
     loss = np.asarray(loss_csv)
 
     return np.array(loss)
+
 
 def extract_loss_index(threshold=0.01):
     new_index = []
@@ -90,7 +87,9 @@ def extract_loss_index(threshold=0.01):
     #나머지 데이터 처리.
     loss[delete_index] = 100
     idx = np.where(loss < 99)[0]
+    print('remain index')
+    print(idx)
     new_index.extend(idx)
     print(len(new_index))
 
-    save_data('loss_index', new_index, './')
+    save_data('loss_index_{0}'.format(threshold), new_index, './')
