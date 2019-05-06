@@ -114,10 +114,9 @@ class ResNet(nn.Module):
         out = F.avg_pool2d(out, 8)
         self.avg_layer = out
         out = out.view(out.size(0), -1)
-        self.feature = out
         out = self.linear(out)
 
-        return out, self.feature
+        return out
 
 # if __name__ == '__main__':
 #     net=ResNet(110, 10)

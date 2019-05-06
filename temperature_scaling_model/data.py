@@ -47,6 +47,7 @@ def data_set(valid_size, batch_size,save_path,data):
 
     torch.save(train_indices, save_path + 'train_indices.pth')
     torch.save(valid_indices, save_path + 'valid_indices.pth')
+    torch.save(valid_loader, save_path + 'valid_loader.pth')
     torch.save(train_loader, save_path + 'train_loader.pth')
     torch.save(train_feature_loader, save_path + 'train_feature_loader.pth')
 

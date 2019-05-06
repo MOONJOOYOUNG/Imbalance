@@ -46,6 +46,7 @@ class ModelWithTemperature(nn.Module):
         with torch.no_grad():
             for input, label in valid_loader:
                 input = input.cuda()
+                label = label.cuda()
                 logits = self.model(input)
                 logits_list.append(logits)
                 labels_list.append(label)

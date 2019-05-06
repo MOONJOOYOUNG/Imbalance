@@ -18,7 +18,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from temperature_scaling import ModelWithTemperature
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--epoch',default=5, type=int)
+parser.add_argument('--epoch',default=110, type=int)
 parser.add_argument('--batch_size', default=128, type=int, help='batch size')
 parser.add_argument('--gpu_id', default='2', type=str, help='devices')
 
@@ -99,13 +99,10 @@ def main():
         if args.scheduler == True:
             scheduler.step()
         train_loss, train_acc, train_loss_idv = train(train_loader,network,criterion,optimizer,epoch+1)
-        valid_loss, valid_acc, valid_softmax, valid_correct ,valid_feature, valid_y,valid_loss_idv = test(valid_loader,network,criterion,epoch+1,'valid')
-        test_loss, test_acc, test_softmax, test_correct ,test_feature, test_y,test_loss_idv = test(test_loader,network,criterion,epoch+1,'test')
-        feature_loss, feature_acc, feature_softmax, feature_correct ,feature_feature, feature_y,feature_loss_idv = test(train_feature_loader,network,criterion,epoch+1,'feature')
+        valid_loss, valid_acc, valid_softmax, valid_correct , valid_y,valid_loss_idv = test(valid_loader,network,criterion,epoch+1,'valid')
+        test_loss, test_acc, test_softmax, test_correct , test_y,test_loss_idv = test(test_loader,network,criterion,epoch+1,'test')
+        feature_loss, feature_acc, feature_softmax, feature_correct , feature_y,feature_loss_idv = test(train_feature_loader,network,criterion,epoch+1,'feature')
         # save files
-        utlis.save_data('train_loss_idv', train_loss_idv, save_path)
-        utlis.save_data('feature_loss_idv', feature_loss_idv, save_path)
-
         train_loss_li.append(train_loss)
         valid_loss_li.append(valid_loss)
         test_loss_li.append(test_loss)
@@ -114,7 +111,9 @@ def main():
         test_acc_li.append(test_acc)
 
         if epoch+1 == args.epoch:
-            torch.save(network.state_dict(), '{0}_{1}_{2}.pth'.format(save_path,'resnet110', epoch+1))
+            torch.save(network.state_dict(), save_path+'{0}_{1}.pth'.format('resnet110', epoch+1))
+            utlis.save_data('train_loss_idv', train_loss_idv, save_path)
+            utlis.save_data('feature_loss_idv', feature_loss_idv, save_path)
 
     for i in range(len(test_softmax)):
         test_softmax[i] = test_softmax[i].item()
@@ -122,7 +121,7 @@ def main():
     print(train_loss,train_acc,valid_loss,valid_acc,test_loss,test_acc)
 
     print('save logs')
-    utlis.save_data('test_correct', test_softmax, save_path)
+    utlis.save_data('test_correct', test_correct, save_path)
     utlis.save_data('test_softmax', test_softmax, save_path)
     utlis.save_loss_acc('train', train_loss_li, train_acc_li, save_path)
     utlis.save_loss_acc('valid', valid_loss_li, valid_acc_li, save_path)
@@ -132,9 +131,6 @@ def main():
     utlis.draw_curve('train_acc.csv', 'valid_acc.csv', 'acc', save_path)
     utlis.draw_curve('train_loss.csv', 'valid_loss.csv', 'loss', save_path)
     utlis.draw_test_curve('test_acc.csv', 'test_loss.csv', save_path)
-
-    # TS
-    #tem(network, valid_loader, test_loader, criterion)
 
 def train(loader,network,criterion,optimizer,epoch):
     print('\nEpoch: %d' % epoch)
@@ -149,7 +145,7 @@ def train(loader,network,criterion,optimizer,epoch):
     for i, (input, target) in enumerate(loader):
         input = input.cuda()
         target = target.cuda()
-        output,feature = network(input)
+        output = network(input)
         loss = criterion(output, target).cuda()
 
         for i in loss:
@@ -164,7 +160,7 @@ def train(loader,network,criterion,optimizer,epoch):
         total_acc += pred.eq(target.data.view_as(pred)).sum()
 
         max_prob, max_label = torch.topk(F.softmax(output), 1, dim=1)
-        li_softmax.append(max_prob)
+        li_softmax.extend(max_prob)
         for i in range(len(pred)):
             if pred[i] == target[i]:
                 accuracy += 1
@@ -185,7 +181,6 @@ def test(loader,network,criterion,epoch,mode):
     with torch.no_grad():
         li_softmax = []
         li_correct = []
-        li_feature = []
         li_y = []
         li_loss = []
         total_loss = 0
@@ -196,14 +191,11 @@ def test(loader,network,criterion,epoch,mode):
             input = input.cuda()
             target = target.cuda()
 
-            output,feature = network(input)
+            output = network(input)
             loss = criterion(output, target).cuda()
             if mode == 'feature':
                 for i in loss:
                     li_loss.append(i.cpu().data.numpy())
-
-            for i in feature:
-                li_feature.append(i.cpu().data.numpy())
 
             for i in target:
                 li_y.append(i.cpu().data.numpy())
@@ -228,7 +220,7 @@ def test(loader,network,criterion,epoch,mode):
         total_acc = 100. * total_acc / len(loader.dataset)
         print('{} Epoch: {} loss: {:.4f} Accuracy : {:.4f}%)'.format(mode, epoch, total_loss, total_acc))
 
-    return total_loss, float(total_acc), li_softmax, li_correct,li_feature, li_y, li_loss
+    return total_loss, float(total_acc), li_softmax, li_correct, li_y, li_loss
 
 def temperature_scaling():
     print("Calibration")
@@ -245,30 +237,31 @@ def temperature_scaling():
     valid_set = tv.datasets.CIFAR100(root='./cifar100_data/', train=True, transform=test_transforms, download=False)
     test_set = tv.datasets.CIFAR100(root='./cifar100_data/', train=False, transform=test_transforms, download=False)
 
-    valid = torch.utils.data.Subset(valid_set, valid_indices)
-
-    valid_loader = torch.utils.data.DataLoader(valid, pin_memory=True, batch_size=args.batch_size, num_workers=4)
+    valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, sampler=SubsetRandomSampler(valid_indices))
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=100, num_workers=4)
-
+    #valid_loader = valid_loader_pth
     criterion = nn.CrossEntropyLoss()
     network = resnet.ResNet(args.layer, 100).cuda()
 
     network.load_state_dict(state_dict)
 
-    test_loss, test_acc, test_softmax, test_correct = test(test_loader, network, criterion, 777 + 1)
+    test_loss, test_acc, test_softmax, test_correct, test_y, test_loss_idv = test(test_loader, network, criterion, args.epoch + 1,'test')
 
     for i in range(len(test_softmax)):
         test_softmax[i] = test_softmax[i].item()
-    utlis.save_prob_csv('before_cali', test_correct, test_softmax, args.save_path)
+    utlis.save_data('before_cali_correct', test_correct, args.save_path)
+    utlis.save_data('before_cali_softmax', test_softmax, args.save_path)
 
     model = ModelWithTemperature(network)
     model.set_temperature(valid_loader)
 
-    test_loss, test_acc, test_softmax, test_correct = test(test_loader, model, criterion, 777 + 1)
+    test_loss, test_acc, test_softmax, test_correct,  test_y, test_loss_idv = test(test_loader, model, criterion, args.epoch + 1,'test')
 
     for i in range(len(test_softmax)):
         test_softmax[i] = test_softmax[i].item()
-    utlis.save_prob_csv('after_cali', test_correct, test_softmax, args.save_path)
+
+    utlis.save_data('after_cali_correct', test_correct, args.save_path)
+    utlis.save_data('after_cali_softmax', test_softmax, args.save_path)
 
 if __name__ == "__main__":
     main()
