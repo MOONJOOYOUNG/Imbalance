@@ -18,7 +18,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--epoch',default=1, type=int)
+parser.add_argument('--epoch',default=300, type=int)
 parser.add_argument('--batch_size', default=128, type=int, help='batch size')
 parser.add_argument('--gpu_id', default='1', type=str, help='devices')
 
@@ -48,7 +48,7 @@ def main():
 
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_id
     print("valid size : {0} batch size : {1}".format(args.valid_size, args.batch_size))
-    train_loader, valid_loader, test_loader = data.data_loader_make(args.csv_data)
+    train_loader, valid_loader = data.data_loader_make(args.csv_data)
 #    train_loader, valid_loader, test_loader, train_feature_loader = data.data_set(args.valid_size, args.batch_size,save_path,args.data)
 
     if args.data == 'cifar100':
@@ -83,7 +83,7 @@ def main():
         optimizer = optim.Adam(network.parameters(), lr=args.lr)
 
     if args.scheduler == True:
-        scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[50, 100], gamma=0.1)
+        scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[200, 250], gamma=0.1)
         #scheduler = lr_scheduler.StepLR(optimizer,step_size=args.decay, gamma=args.gamma)
         #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[0.5 * args.epoch, 0.75 * args.epoch], gamma=0.1)
 
@@ -103,25 +103,30 @@ def main():
             scheduler.step()
         train_loss, train_acc, train_loss_idv = train(train_loader,network,criterion,optimizer,epoch+1)
         valid_loss, valid_acc, valid_softmax, valid_correct ,valid_feature, valid_y,valid_loss_idv = test(train_loader,network,criterion,epoch+1,'valid')
-        test_loss, test_acc, test_softmax, test_correct ,test_feature, test_y,test_loss_idv = test(test_loader,network,criterion,epoch+1,'test')
-
-        torch.save(network.state_dict(), '{0}_{1}_{2}.pth'.format(save_path,'resnet110', epoch+1))
+        # test_loss, test_acc, test_softmax, test_correct ,test_feature, test_y,test_loss_idv = test(test_loader,network,criterion,epoch+1,'test')
 
         train_loss_li.append(train_loss)
         valid_loss_li.append(valid_loss)
-        test_loss_li.append(test_loss)
+        # test_loss_li.append(test_loss)
         train_acc_li.append(train_acc)
         valid_acc_li.append(valid_acc)
-        test_acc_li.append(test_acc)
+        # test_acc_li.append(test_acc)
 
-    for i in range(len(test_softmax)):
-        test_softmax[i] = test_softmax[i].item()
+        if epoch == args.epoch + 1:
+            torch.save(network.state_dict(), '{0}_{1}_{2}.pth'.format(save_path,'resnet110', epoch+1))
 
-    print(train_loss,train_acc,valid_loss,valid_acc,test_loss,test_acc)
+
+    # for i in range(len(test_softmax)):
+    #     test_softmax[i] = test_softmax[i].item()
+
+    # print(train_loss,train_acc,valid_loss,valid_acc,test_loss,test_acc)
 
     print('save logs')
-    utlis.save_data('test_correct', test_correct, save_path)
-    utlis.save_data('test_softmax', test_softmax, save_path)
+    # utlis.save_data('test_correct', test_correct, save_path)
+    # utlis.save_data('test_softmax', test_softmax, save_path)
+    # valid_correct , valid_y
+    utlis.save_data('valid_correct', valid_correct, save_path)
+    utlis.save_data('valid_y', valid_y, save_path)
     utlis.save_loss_acc('train', train_loss_li, train_acc_li, save_path)
     utlis.save_loss_acc('valid', valid_loss_li, valid_acc_li, save_path)
     utlis.save_loss_acc('test', test_loss_li, test_acc_li, save_path)
@@ -142,7 +147,6 @@ def train(loader,network,criterion,optimizer,epoch):
     accuracy = 0
 
     for i, (input, target) in enumerate(loader):
-        input = data.data_augmentation(input, 'train')
         input = input.cuda()
         target = target.cuda()
         output,feature = network(input)
@@ -189,7 +193,6 @@ def test(loader,network,criterion,epoch,mode):
         accuracy = 0
 
         for i, (input, target) in enumerate(loader):
-            input = data.data_augmentation(input, 'train')
             input = input.cuda()
             target = target.cuda()
 
